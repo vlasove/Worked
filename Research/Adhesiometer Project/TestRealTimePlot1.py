@@ -7,6 +7,7 @@
 # Size of source mod 2**32: 22922 bytes
 import sys, os
 from PyQt5 import QtGui
+import PyQt5
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QHBoxLayout
 import functools, numpy as np, random as rd, matplotlib
@@ -253,7 +254,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         writeData.clear()
         self.p = ''
         print(port_name)
-        self.p = s.Serial(port_name, 2000000)
+        self.p = s.Serial(port_name, 9600)
         time.sleep(0.3)
         self.setDAC()
         self.myDataLoop = threading.Thread(name='myDataLoop', target=dataSendLoop, daemon=True, args=(self.addData_callbackFunc, self.p))
@@ -276,13 +277,11 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.downLim.setValue(val)
 
     def setDAC(self):
-        sendData = '\x03'
-        heater = '\x00\x00'
-        if self.cb_heater.isChecked():
-            heater = '\x00\x01'
-        sendData += self.spinBox.value().to_bytes(2, byteorder='big', signed=True) + heater + '\x00\x00'
+        sendData = b'\x03'
+        heater = b'\x00\x01'
+        sendData += self.spinBox.value().to_bytes(2, byteorder='big', signed=True) + heater + b'\x00\x00'
         calc_crc = crc16.crc(sendData)
-        sendData = '\x06\x85' + sendData + calc_crc.to_bytes(2, byteorder='big', signed=False)
+        sendData = b'\x06\x85'+sendData + calc_crc.to_bytes(2, byteorder ='big', signed = False)
         print(sendData)
         self.p.write(sendData)
         DACfile = open('dac.txt', 'w')
@@ -308,28 +307,28 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         up_limit = 5000
         down_limit = -22000
         count = 1
-        sendData = '\x02'
+        sendData = b'\x02'
         recordData = True
         start_time = time.time()
         if self.cb_mode.currentText() == 'Cyclic':
             up_limit = -self.upLim.value() / SCALE_GRAPH_VAL
             down_limit = -self.downLim.value() / SCALE_GRAPH_VAL
             count = self.count.value()
-            sendData = '\x01'
+            sendData = b'\x01'
             recordData = False
         sendData += int(up_limit).to_bytes(2, byteorder='big', signed=True)
         sendData += int(down_limit).to_bytes(2, byteorder='big', signed=True)
         sendData += int(count).to_bytes(2, byteorder='big', signed=True)
         calc_crc = crc16.crc(sendData)
-        sendData = '\x06\x85' + sendData + calc_crc.to_bytes(2, byteorder='big', signed=False)
+        sendData = b'\x06\x85' + sendData + calc_crc.to_bytes(2, byteorder='big', signed=False)
         print(sendData)
         self.p.write(sendData)
 
     def stopMoving(self):
-        sendData = '\x04'
+        sendData = b'\x04'
         sendData += (0).to_bytes(2, byteorder='big', signed=True) + (0).to_bytes(2, byteorder='big', signed=True) + (0).to_bytes(2, byteorder='big', signed=True)
         calc_crc = crc16.crc(sendData)
-        sendData = '\x06\x85' + sendData + calc_crc.to_bytes(2, byteorder='big', signed=False)
+        sendData = b'\x06\x85' + sendData + calc_crc.to_bytes(2, byteorder='big', signed=False)
         self.p.write(sendData)
         print(sendData)
         fileData = open('DataSingle.txt', 'w')
@@ -436,9 +435,8 @@ def dataSendLoop(addData_callbackFunc, p):
     n = np.linspace(0, 499, 500)
     y = 50 + 25 * np.sin(n / 8.3) + 10 * np.sin(n / 7.5) - 5 * np.sin(n / 1.5)
     i = 0
-    adc_val = [
-     0]
-    while 1:
+    adc_val = [0]
+    while True:
         time.sleep(0.001)
         ind = 0
         wait_bytes = p.in_waiting

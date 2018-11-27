@@ -5,6 +5,14 @@
 # Embedded file name: C:\Users\Dart\Documents\WorkSpace\adheziometer\pc_software\crc16.py
 # Compiled at: 2018-07-23 19:54:02
 # Size of source mod 2**32: 951 bytes
+
+try:
+    import port_tests
+except Exception as e:
+    print('COM in not working')
+    exit()
+
+    
 POLYNOMIAL = 4129
 PRESET = 65535
 
